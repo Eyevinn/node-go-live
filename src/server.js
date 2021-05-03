@@ -3,7 +3,9 @@ require("make-promises-safe") // installs an 'unhandledRejection' handler
 const debug = require("debug")("api-server");
 const Fastify = require("fastify")({ ignoreTrailingSlash: true });
 
-const { MediaLive, CreateInputCommand } = require("@aws-sdk/client-medialive");
+const { MediaLive } = require("@aws-sdk/client-medialive");
+
+const Input = require("./aws/input.js");
 
 class GoLiveApiServer {
   constructor(opts) {
@@ -46,27 +48,18 @@ class GoLiveApiServer {
   async createChannel({ channelId }) {
     debug(`${channelId}: Creating channel`);
     // Create input
-    const inputParams = {
-      Name: "RTMP_" + channelId,
-      Type: "RTMP_PUSH",
-      Destinations: [ {
-        StreamName: channelId
-      }],
-      InputSecurityGroups: [
-        "9040418"
-      ]
-    };
-    const data = await this.mediaLiveClient.send(new CreateInputCommand(inputParams));
-    debug("Success", data);
+    const input = new Input(this.mediaLiveClient, { channelId: channelId });
+    await input.create();
 
-    // Create storage (if not already created)
+    // Attach input
+
+    // Attach storage (create if it doesn't exist)
 
     // Create outputs
 
-    debug(data.Input.Destinations);
     const channel = {
       channel_id: channelId,
-      rtmp_url: data.Input.Destinations[0].Url
+      rtmp_url: input.getRtmpUrl(),
     };
     return channel;
   }
