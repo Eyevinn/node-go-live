@@ -1,14 +1,6 @@
 const debug = require("debug")("api-channel");
 const { nanoid } = require("nanoid");
-
-const CreateChannelCommand = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.createChannel(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-};
+const { CreateChannel } = require("./wrapper.js");
 
 const VideoDescription = ({ name, maxBitrate, frameRate, height, width }) => {
   return {
@@ -159,7 +151,7 @@ class Channel {
       },
     };
     debug(channelParams);
-    const data = await CreateChannelCommand(this.client, channelParams);
+    const data = await CreateChannel(this.client, channelParams);
     debug("Success", data);
     this.data = data;
   }

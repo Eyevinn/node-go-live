@@ -1,30 +1,27 @@
 const debug = require("debug")("api-input");
 
-const CreateInputCommand = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.createInput(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-};
-
-const ListInputsCommand = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.listInputs(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-};
+const { ListInputSecurityGroups, CreateInputSecurityGroup, CreateInput, ListInputs } = require("./wrapper.js");
 
 class Input {
-  constructor(client, { channelId }) {
+  constructor(client, { channelId, whiteListRules }) {
     this.client = client;
     this.channelId = channelId;
+    this.whiteListRules = whiteListRules;
   }
 
   async create() {
+    // Create input security group for whitelist rules
+    const inputSecurityGroups = await ListInputSecurityGroups(this.client, {});
+    let inputSecurityGroup = inputSecurityGroups.InputSecurityGroups.find(sg => sg.WhitelistRules.map(wr => wr.Cidr).find(cidr => cidr === this.whiteListRules));
+    if (!inputSecurityGroup) {
+      const result = await CreateInputSecurityGroup(this.client, {
+        WhitelistRules: [ { Cidr: this.whiteListRules } ]
+      });
+      inputSecurityGroup = result.SecurityGroup;
+      debug("No input security group found for whitelist rules, created", inputSecurityGroup);
+    }
+
+    // Create RTMP input
     const inputParams = {
       Name: "RTMP_" + this.channelId,
       Type: "RTMP_PUSH",
@@ -32,16 +29,16 @@ class Input {
         StreamName: this.channelId
       }],
       InputSecurityGroups: [
-        "9040418" // should be created if it doesn't exist and not hardcoded
+        inputSecurityGroup.Id
       ]
     };
-    const data = await CreateInputCommand(this.client, inputParams);
+    const data = await CreateInput(this.client, inputParams);
     debug("Success", data);
     this.data = data;
   }
 
   async exists() {
-    const data = await ListInputsCommand(this.client, {});
+    const data = await ListInputs(this.client, {});
     const input = data.Inputs.find(input => input.Name === "RTMP_" + this.channelId);
     if (!input) {
       return false;

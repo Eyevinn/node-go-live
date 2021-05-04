@@ -50,11 +50,13 @@ class GoLiveApiServer {
     debug(`Listening on ${address}`);
   }
 
-  async createChannel({ channelId, mediaPackageChannel }) {
+  async createChannel({ channelId, mediaPackageChannel, whiteListRules }) {
     debug(`${channelId}: Creating channel`);
+    debug(mediaPackageChannel, whiteListRules);
     
-    const input = new Input(this.mediaLiveClient, { channelId: channelId });
+    const input = new Input(this.mediaLiveClient, { channelId: channelId, whiteListRules: whiteListRules });
     if (!(await input.exists())) {
+      debug(`${channelId}: Creating input`);
       await input.create();
     }
 
