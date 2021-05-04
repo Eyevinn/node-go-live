@@ -1,6 +1,6 @@
 const debug = require("debug")("api-input");
 
-const { CreateInputCommand } = require("@aws-sdk/client-medialive");
+const { CreateInputCommand, ListInputsCommand } = require("@aws-sdk/client-medialive");
 
 class Input {
   constructor(client, { channelId }) {
@@ -22,6 +22,28 @@ class Input {
     const data = await this.client.send(new CreateInputCommand(inputParams));
     debug("Success", data);
     this.data = data;
+  }
+
+  async exists() {
+    const data = await this.client.send(new ListInputsCommand({}));
+    const input = data.Inputs.find(input => input.Name === "RTMP_" + this.channelId);
+    if (!input) {
+      return false;
+    } {
+      debug("Input exists", input);
+      this.data = {
+        Input: input
+      };
+      return true;
+    }
+  }
+
+  getInputId() {
+    return this.data.Input.Id;
+  }
+
+  getInputName() {
+    return this.data.Input.Name;
   }
 
   getRtmpUrl() {

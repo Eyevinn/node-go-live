@@ -5,10 +5,12 @@ const schemas = {
     body: {
       type: "object",
       properties: {
-        channel_id: { type: "string", description: "Channel Id" }
+        channel_id: { type: "string", description: "Channel Id" },
+        media_package_channel: { type: "string", description: "Media Package channel ID" }
       },
       example: {
-        channel_id: "example1"
+        channel_id: "example1",
+        media_package_channel: "eyevinn",
       }
     }
   }
@@ -23,7 +25,8 @@ module.exports = (fastify, opts, next) => {
         reply.code(400).send({ message: "Missing channel_id in request body" });      
       } else {
         const channel = await controller.createChannel({
-          channelId: request.body.channel_id
+          channelId: request.body.channel_id,
+          mediaPackageChannel: request.body.media_package_channel,
         });
         debug(channel);
         reply.send(channel);
