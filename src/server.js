@@ -7,6 +7,8 @@ const AWS = require("aws-sdk");
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
 
+const { StartChannel, StopChannel, ListChannels } = require("./aws/wrapper.js");
+
 class GoLiveApiServer {
   constructor(opts) {
     this.aws_access_key_id = opts.aws_access_key_id;
@@ -66,7 +68,7 @@ class GoLiveApiServer {
 
     return {
       channel_id: channelId,
-      rtmp_url: input.getRtmpUrl(),
+      rtmp_urls: input.getRtmpUrls(),
     };
   }
 
@@ -74,12 +76,30 @@ class GoLiveApiServer {
     
   }
 
-  async startChannel() {
-
+  async startChannel({ channelId }) {
+    const data = await ListChannels(this.mediaLiveClient, {});
+    const channel = data.Channels.find(ch => ch.Name === channelId);
+    if (channel) {
+      await StartChannel(this.mediaLiveClient, { ChannelId: channel.Id });
+      return {
+        status: "STARTED"
+      }        
+    } else {
+      throw new Error(`Could not find channel "${channelId}"`);
+    }
   }
 
-  async stopChannel() {
-
+  async stopChannel({ channelId }) {
+    const data = await ListChannels(this.mediaLiveClient, {});
+    const channel = data.Channels.find(ch => ch.Name === channelId);
+    if (channel) {
+      await StopChannel(this.mediaLiveClient, { ChannelId: channel.Id });
+      return {
+        status: "STOPPED"
+      }
+    } else {
+      throw new Error(`Could not find channel "${channelId}"`);
+    }
   }
 }
 

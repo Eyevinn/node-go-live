@@ -15,6 +15,21 @@ const schemas = {
         media_package_channel: "eyevinn",
       }
     }
+  },
+  "PUT:channelId/status": {
+    description: "Start or stop a channel",
+    params: {
+      channelId: { type: "string", description: "Channel Id" }
+    },
+    body: {
+      type: "object",
+      properties: {
+        status: { type: "string" , description: "[started|stopped]"}
+      },
+      example: {
+        status: "started"
+      }
+    }
   }
 };
 
@@ -34,6 +49,23 @@ module.exports = (fastify, opts, next) => {
         });
         debug(channel);
         reply.send(channel);
+      }
+    } catch (exc) {
+      debug(exc);
+      reply.code(500).send({ message: exc.message });
+    }
+  });
+
+  fastify.put("/:channelId/status", { schema: schemas["PUT:channelId/status"] }, async (request, reply) => {
+    try {
+      debug(request.params);
+      debug(request.body);
+      if (request.body.status === "started") {
+        const status = await controller.startChannel({ channelId: request.params.channelId });
+        reply.send(status);
+      } else if (request.body.status === "stopped") {
+        const status = await controller.stopChannel({ channelId: request.params.channelId });
+        reply.send(status);
       }
     } catch (exc) {
       debug(exc);

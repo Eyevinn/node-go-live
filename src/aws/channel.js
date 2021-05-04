@@ -88,7 +88,7 @@ class Channel {
     const channelParams = {
       Name: this.channelId,
       RoleArn: this.roleArn,
-      ChannelClass: "SINGLE_PIPELINE",
+      ChannelClass: "STANDARD",
       LogLevel: "INFO",
       Destinations: [ { 
         Id: destinationId,
@@ -150,7 +150,6 @@ class Channel {
         Resolution: "HD"
       },
     };
-    debug(channelParams);
     const data = await CreateChannel(this.client, channelParams);
     debug("Success", data);
     this.data = data;

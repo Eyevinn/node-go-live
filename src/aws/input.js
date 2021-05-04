@@ -25,9 +25,10 @@ class Input {
     const inputParams = {
       Name: "RTMP_" + this.channelId,
       Type: "RTMP_PUSH",
-      Destinations: [ {
-        StreamName: this.channelId
-      }],
+      Destinations: [ 
+        { StreamName: this.channelId + "A" }, 
+        { StreamName: this.channelId + "B" } 
+      ],
       InputSecurityGroups: [
         inputSecurityGroup.Id
       ]
@@ -43,7 +44,6 @@ class Input {
     if (!input) {
       return false;
     } {
-      debug("Input exists", input);
       this.data = {
         Input: input
       };
@@ -59,8 +59,8 @@ class Input {
     return this.data.Input.Name;
   }
 
-  getRtmpUrl() {
-    return this.data.Input.Destinations[0].Url;
+  getRtmpUrls() {
+    return this.data.Input.Destinations.map(d => d.Url);
   }
 
 }
