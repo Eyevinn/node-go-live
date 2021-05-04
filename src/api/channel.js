@@ -32,7 +32,7 @@ module.exports = (fastify, opts, next) => {
         reply.send(channel);
       }
     } catch (exc) {
-      debug(exc.message);
+      debug(exc);
       reply.code(500).send({ message: exc.message });
     }
   });

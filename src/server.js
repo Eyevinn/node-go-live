@@ -2,8 +2,7 @@ require("make-promises-safe") // installs an 'unhandledRejection' handler
 
 const debug = require("debug")("api-server");
 const Fastify = require("fastify")({ ignoreTrailingSlash: true });
-
-const { MediaLive, CreateChannelCommand } = require("@aws-sdk/client-medialive");
+const AWS = require("aws-sdk");
 
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
@@ -18,7 +17,7 @@ class GoLiveApiServer {
       throw new Error("Missing AWS credentials");
     }
 
-    this.mediaLiveClient = new MediaLive({ 
+    this.mediaLiveClient = new AWS.MediaLive({ 
       region: "eu-north-1",
       aws_access_key_id: this.aws_access_key_id,
       aws_secret_access_key: this.aws_secret_access_key,

@@ -1,7 +1,14 @@
 const debug = require("debug")("api-channel");
 const { nanoid } = require("nanoid");
 
-const { CreateChannelCommand } = require("@aws-sdk/client-medialive");
+const CreateChannelCommand = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.createChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+};
 
 const VideoDescription = ({ name, maxBitrate, frameRate, height, width }) => {
   return {
@@ -9,7 +16,6 @@ const VideoDescription = ({ name, maxBitrate, frameRate, height, width }) => {
       H264Settings: {
         AfdSignaling: "NONE",
         ColorMetadata: "INSERT",
-        EntropyCoding: "CABAC",
         Syntax: "DEFAULT",
         AdaptiveQuantization: "HIGH",
         FramerateControl: "SPECIFIED",
@@ -57,7 +63,8 @@ const AudioDescription = ({ name, bitrate, sampleRate }) => {
     },
     AudioTypeControl: "FOLLOW_INPUT",
     LanguageCodeControl: "FOLLOW_INPUT",
-    Name: name
+    Name: name,
+    AudioSelectorName: name,
   };
 };
 
@@ -87,7 +94,7 @@ class Channel {
     const destinationId = nanoid(6);
 
     const channelParams = {
-      Name: "CHANNEL_" + this.channelId,
+      Name: this.channelId,
       RoleArn: this.roleArn,
       ChannelClass: "SINGLE_PIPELINE",
       LogLevel: "INFO",
@@ -111,9 +118,11 @@ class Channel {
         CaptionDescriptions: [],
         OutputGroups: [ {
           Name: this.mediaPackageChannel,
-          OuputGroupSettings: {
+          OutputGroupSettings: {
             MediaPackageGroupSettings: {
-              Destination: { DestinationRefId: destinationId }
+              Destination: { 
+                DestinationRefId: destinationId 
+              }
             }
           },
           Outputs: [ {
@@ -150,7 +159,7 @@ class Channel {
       },
     };
     debug(channelParams);
-    const data = await this.client.send(new CreateChannelCommand(channelParams));
+    const data = await CreateChannelCommand(this.client, channelParams);
     debug("Success", data);
     this.data = data;
   }
