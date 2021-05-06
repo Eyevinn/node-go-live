@@ -131,6 +131,7 @@ module.exports = (fastify, opts, next) => {
 
   fastify.get("/:channelId", { schema: schemas["GET:channelId"] }, async (request, reply) => {
     try {
+      debug(request.params);
       const channel = await controller.getChannelDetails({ channelId: request.params.channelId });
       debug(channel);
       reply.send(channel);
@@ -146,7 +147,9 @@ module.exports = (fastify, opts, next) => {
 
   fastify.delete("/:channelId", { schema: schemas["DELETE:channelId"] }, async (request, reply) => {
     try {
+      debug(request.params);
       await controller.removeChannel({ channelId: request.params.channelId });
+      reply.send({});
     } catch (exc) {
       debug(exc);
       if (exc instanceof ChannelNotFoundError) {

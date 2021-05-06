@@ -43,6 +43,15 @@ const DeleteInput = (client, params) => {
   });
 }
 
+const WaitForInputToBeDetached = (client, id) => {
+  return new Promise((resolve, reject) => {
+    client.waitFor("inputDetached", { InputId: id }, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
+
 const CreateChannel = (client, params) => {
   return new Promise((resolve, reject) => {
     client.createChannel(params, (err, data) => {
@@ -108,6 +117,7 @@ module.exports = {
   ListInputs,
   DeleteInput,
   GetInputById,
+  WaitForInputToBeDetached,
   CreateChannel,
   StartChannel,
   StopChannel,

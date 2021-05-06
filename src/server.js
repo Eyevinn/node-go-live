@@ -7,7 +7,8 @@ const AWS = require("aws-sdk");
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
 
-const { StartChannel, StopChannel, ListChannels, DeleteChannel, DeleteInput, GetChannelByName, GetInputById } = require("./aws/wrapper.js");
+const { StartChannel, StopChannel, ListChannels, DeleteChannel, 
+  DeleteInput, GetChannelByName, GetInputById, WaitForInputToBeDetached } = require("./aws/wrapper.js");
 
 const { ChannelNotFoundError } = require("./errors.js");
 
@@ -101,8 +102,9 @@ class GoLiveApiServer {
   async removeChannel({ channelId }) {
     const channel = await GetChannelByName(this.mediaLiveClient, channelId);
     if (channel) {
+      debug(`${channelId}: Removing channel`);
       const data = await DeleteChannel(this.mediaLiveClient, { ChannelId: channel.Id });
-      // Need to wait for input to be detached before it can be removed
+      await WaitForInputToBeDetached(this.mediaLiveClient, data.InputAttachments[0].InputId);
       await DeleteInput(this.mediaLiveClient, { InputId: data.InputAttachments[0].InputId });
     } else {
       throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
