@@ -14,6 +14,53 @@ const schemas = {
         whitelist: "0.0.0.0/0",
         media_package_channel: "eyevinn",
       }
+    },
+    response: {
+      200: {
+        description: "On success returns details of the created channel",
+        type: "object",
+        properties: {
+          channel_id: { type: "string", description: "Channel Id" },
+          rtmp_urls: {
+            description: "An array of RTMP URLs to push video to",
+            type: "array",
+            items: {
+              type: "string", description: "RTMP URL"
+            }
+          }
+        }
+      }
+    }
+  },
+  "GET": {
+    description: "List all channels",
+    response: {
+      200: {
+        description: "On success returns an array of channels",
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            channel_id: { type: "string", description: "Channel Id" },
+          }
+        }
+      }
+    }
+  },
+  "GET:channelId": {
+    description: "Get details of a channel",
+    params: {
+      channelId: { type: "string", description: "Channel Id" }
+    },
+    response: {
+      200: {
+        description: "On success returns details of a channel",
+        type: "object",
+        properties: {
+          channel_id: { type: "string", description: "Channel Id" },
+
+        }
+      }
     }
   },
   "PUT:channelId/status": {
@@ -53,6 +100,17 @@ module.exports = (fastify, opts, next) => {
     } catch (exc) {
       debug(exc);
       reply.code(500).send({ message: exc.message });
+    }
+  });
+
+  fastify.get("/", { schema: schemas["GET"] }, async (request, reply) => {
+    try {
+      const channels = await controller.listChannels();
+      debug(channels);
+      reply.send(channels);
+    } catch (exc) {
+      debug(exc);
+      reply.code(500).send({ message: exc.message });
     }
   });
 

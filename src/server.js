@@ -13,6 +13,7 @@ class GoLiveApiServer {
   constructor(opts) {
     this.aws_access_key_id = opts.aws_access_key_id;
     this.aws_secret_access_key = opts.aws_secret_access_key;
+    this.aws_region = opts.aws_region || "eu-north-1";
     this.role_arn = opts.role_arn;
 
     if (!this.aws_access_key_id && !this.aws_secret_access_key) {
@@ -20,7 +21,7 @@ class GoLiveApiServer {
     }
 
     this.mediaLiveClient = new AWS.MediaLive({ 
-      region: "eu-north-1",
+      region: this.aws_region,
       aws_access_key_id: this.aws_access_key_id,
       aws_secret_access_key: this.aws_secret_access_key,
     });
@@ -52,10 +53,7 @@ class GoLiveApiServer {
     debug(`Listening on ${address}`);
   }
 
-  async createChannel({ channelId, mediaPackageChannel, whiteListRules }) {
-    debug(`${channelId}: Creating channel`);
-    debug(mediaPackageChannel, whiteListRules);
-    
+  async createChannel({ channelId, mediaPackageChannel, whiteListRules }) {    
     const input = new Input(this.mediaLiveClient, { channelId: channelId, whiteListRules: whiteListRules });
     if (!(await input.exists())) {
       debug(`${channelId}: Creating input`);
@@ -64,12 +62,25 @@ class GoLiveApiServer {
 
     const channel = new Channel(this.mediaLiveClient, 
       { channelId: channelId, input: input, mediaPackageChannel: mediaPackageChannel, roleArn: this.role_arn });
-    await channel.create();
+    if (!(await channel.exists())) {
+      debug(`${channelId}: Creating channel`);
+      await channel.create();
+    }
 
     return {
       channel_id: channelId,
       rtmp_urls: input.getRtmpUrls(),
     };
+  }
+
+  async listChannels() {
+    const data = await ListChannels(this.mediaLiveClient, {});
+    const channels = data.Channels.map(ch => {
+      return { 
+        channel_id: ch.Name
+      }
+    });
+    return channels;
   }
 
   async removeChannel() {

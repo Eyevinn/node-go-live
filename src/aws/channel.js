@@ -1,6 +1,6 @@
 const debug = require("debug")("api-channel");
 const { nanoid } = require("nanoid");
-const { CreateChannel } = require("./wrapper.js");
+const { CreateChannel, ListChannels } = require("./wrapper.js");
 
 const VideoDescription = ({ name, maxBitrate, frameRate, height, width }) => {
   return {
@@ -155,6 +155,18 @@ class Channel {
     this.data = data;
   }
 
+  async exists() {
+    const data = await ListChannels(this.client, {});
+    const channel = data.Channels.find(ch => ch.Name === this.channelId);
+    if (!channel) {
+      return false;
+    } {
+      this.data = {
+        Channel: channel
+      };
+      return true;
+    }
+  }
 }
 
 module.exports = Channel;
