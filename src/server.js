@@ -6,6 +6,7 @@ const AWS = require("aws-sdk");
 
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
+const MediaPackageChannel = require("./aws/media_package_channel.js");
 
 const { StartChannel, StopChannel, ListChannels, DeleteChannel, 
   DeleteInput, GetChannelByName, GetInputById, WaitForInputToBeDetached } = require("./aws/wrapper.js");
@@ -24,6 +25,12 @@ class GoLiveApiServer {
     }
 
     this.mediaLiveClient = new AWS.MediaLive({ 
+      region: this.aws_region,
+      aws_access_key_id: this.aws_access_key_id,
+      aws_secret_access_key: this.aws_secret_access_key,
+    });
+
+    this.mediaPackageClient = new AWS.MediaPackage({
       region: this.aws_region,
       aws_access_key_id: this.aws_access_key_id,
       aws_secret_access_key: this.aws_secret_access_key,
@@ -90,9 +97,13 @@ class GoLiveApiServer {
     const channel = await GetChannelByName(this.mediaLiveClient, channelId);
     if (channel) {
       const input = await GetInputById(this.mediaLiveClient, channel.InputAttachments[0].InputId);
+      const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: channel.Destinations[0].MediaPackageSettings[0].ChannelId });
+      const mediaPackageChannelEndpoints = await mediaPackageChannel.endpoints();
+      const hlsPackages = mediaPackageChannelEndpoints.OriginEndpoints.filter(ep => ep.HlsPackage !== undefined);
       return {
         channel_id: channel.Name,
-        rtmp_urls: input.Destinations.map(d => d.Url)
+        rtmp_urls: input.Destinations.map(d => d.Url),
+        hls_urls: hlsPackages.map(pkg => pkg.Url)
       }
     } else {
       throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);

@@ -67,6 +67,11 @@ const schemas = {
             items: {
               type: "string", description: "RTMP URL"
             }
+          },
+          hls_urls: {
+            description: "An array of HLS URLs for playback",
+            type: "array",
+            items: { type: "string", description: "HLS URL" }
           }
         }
       }
