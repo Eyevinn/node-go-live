@@ -1,4 +1,7 @@
 const debug = require("debug")("api-channel");
+
+const { ChannelNotFoundError } = require("../errors.js");
+
 const schemas = {
   "POST": {
     description: "Create a channel",
@@ -58,9 +61,21 @@ const schemas = {
         type: "object",
         properties: {
           channel_id: { type: "string", description: "Channel Id" },
-
+          rtmp_urls: {
+            description: "An array of RTMP URLs to push video to",
+            type: "array",
+            items: {
+              type: "string", description: "RTMP URL"
+            }
+          }
         }
       }
+    }
+  },
+  "DELETE:channelId": {
+    description: "Remove a channel and its inputs",
+    params: {
+      channelId: { type: "string", description: "Channel Id" }      
     }
   },
   "PUT:channelId/status": {
@@ -114,6 +129,34 @@ module.exports = (fastify, opts, next) => {
     }
   });
 
+  fastify.get("/:channelId", { schema: schemas["GET:channelId"] }, async (request, reply) => {
+    try {
+      const channel = await controller.getChannelDetails({ channelId: request.params.channelId });
+      debug(channel);
+      reply.send(channel);
+    } catch (exc) {
+      debug(exc);
+      if (exc instanceof ChannelNotFoundError) {
+        reply.code(404).send({ message: exc.message });
+      } else {
+        reply.code(500).send({ message: exc.message });
+      }
+    }
+  });
+
+  fastify.delete("/:channelId", { schema: schemas["DELETE:channelId"] }, async (request, reply) => {
+    try {
+      await controller.removeChannel({ channelId: request.params.channelId });
+    } catch (exc) {
+      debug(exc);
+      if (exc instanceof ChannelNotFoundError) {
+        reply.code(404).send({ message: exc.message });
+      } else {
+        reply.code(500).send({ message: exc.message });
+      }
+    }
+  });
+
   fastify.put("/:channelId/status", { schema: schemas["PUT:channelId/status"] }, async (request, reply) => {
     try {
       debug(request.params);
@@ -127,7 +170,11 @@ module.exports = (fastify, opts, next) => {
       }
     } catch (exc) {
       debug(exc);
-      reply.code(500).send({ message: exc.message });
+      if (exc instanceof ChannelNotFoundError) {
+        reply.code(404).send({ message: exc.message });
+      } else {
+        reply.code(500).send({ message: exc.message });
+      }
     }
   });
   next();

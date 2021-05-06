@@ -7,7 +7,9 @@ const AWS = require("aws-sdk");
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
 
-const { StartChannel, StopChannel, ListChannels } = require("./aws/wrapper.js");
+const { StartChannel, StopChannel, ListChannels, DeleteChannel, DeleteInput, GetChannelByName, GetInputById } = require("./aws/wrapper.js");
+
+const { ChannelNotFoundError } = require("./errors.js");
 
 class GoLiveApiServer {
   constructor(opts) {
@@ -83,33 +85,51 @@ class GoLiveApiServer {
     return channels;
   }
 
-  async removeChannel() {
-    
+  async getChannelDetails({ channelId }) {
+    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
+    if (channel) {
+      const input = await GetInputById(this.mediaLiveClient, channel.InputAttachments[0].InputId);
+      return {
+        channel_id: channel.Name,
+        rtmp_urls: input.Destinations.map(d => d.Url)
+      }
+    } else {
+      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
+    }
+  }
+
+  async removeChannel({ channelId }) {
+    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
+    if (channel) {
+      const data = await DeleteChannel(this.mediaLiveClient, { ChannelId: channel.Id });
+      // Need to wait for input to be detached before it can be removed
+      await DeleteInput(this.mediaLiveClient, { InputId: data.InputAttachments[0].InputId });
+    } else {
+      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
+    }
   }
 
   async startChannel({ channelId }) {
-    const data = await ListChannels(this.mediaLiveClient, {});
-    const channel = data.Channels.find(ch => ch.Name === channelId);
+    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
     if (channel) {
       await StartChannel(this.mediaLiveClient, { ChannelId: channel.Id });
       return {
         status: "STARTED"
       }        
     } else {
-      throw new Error(`Could not find channel "${channelId}"`);
+      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
     }
   }
 
   async stopChannel({ channelId }) {
-    const data = await ListChannels(this.mediaLiveClient, {});
-    const channel = data.Channels.find(ch => ch.Name === channelId);
+    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
     if (channel) {
       await StopChannel(this.mediaLiveClient, { ChannelId: channel.Id });
       return {
         status: "STOPPED"
       }
     } else {
-      throw new Error(`Could not find channel "${channelId}"`);
+      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
     }
   }
 }

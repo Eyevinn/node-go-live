@@ -34,6 +34,15 @@ const ListInputs = (client, params) => {
   });
 }
 
+const DeleteInput = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.deleteInput(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
+
 const CreateChannel = (client, params) => {
   return new Promise((resolve, reject) => {
     client.createChannel(params, (err, data) => {
@@ -70,14 +79,39 @@ const ListChannels = (client, params) => {
   });
 }
 
+const DeleteChannel = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.deleteChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });  
+}
+
+const GetChannelByName = async (client, name) => {
+  const data = await ListChannels(client, {});
+  const channel = data.Channels.find(ch => ch.Name === name);
+  return channel;
+}
+
+const GetInputById = async (client, id) => {
+  const data = await ListInputs(client, {});
+  console.log(data);
+  const input = data.Inputs.find(input => input.Id === id);
+  return input;
+}
 
 module.exports = {
   ListInputSecurityGroups,
   CreateInputSecurityGroup,
   CreateInput,
   ListInputs,
+  DeleteInput,
+  GetInputById,
   CreateChannel,
   StartChannel,
   StopChannel,
-  ListChannels
+  ListChannels,
+  DeleteChannel,
+  GetChannelByName
 }
