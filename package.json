@@ -1,6 +1,6 @@
 {
   "name": "@eyevinn/go-live",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "API layer on top of AWS Media Services to stream live",
   "main": "index.js",
   "scripts": {
