@@ -4,12 +4,27 @@
   "description": "API layer on top of AWS Media Services to stream live",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postversion": "git push && git push --tags"
   },
   "author": "Eyevinn Technology AB <work@eyevinn.se>",
   "contributors": [
     "Jonas Rydholm Birmé <jonas.birme@eyevinn.se> (Eyevinn Technology AB)"
   ],
+  "keywords": [
+    "aws",
+    "medialive",
+    "api",
+    "streaming",
+    "live"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Eyevinn/node-go-live",
+  },
+  "bugs": {
+    "url": "https://github.com/Eyevinn/node-go-live/issues"
+  },
   "license": "Apache-2.0",
   "dependencies": {
     "aws-sdk": "^2.899.0",
