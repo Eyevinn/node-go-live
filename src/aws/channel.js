@@ -1,6 +1,52 @@
 const debug = require("debug")("api-channel");
 const { nanoid } = require("nanoid");
-const { CreateChannel, ListChannels } = require("./wrapper.js");
+const Input = require("./input.js");
+const MediaPackageChannel = require("./media_package_channel.js");
+const { ListChannels } = require("./wrapper.js");
+
+const { ChannelNotFoundError } = require("../errors.js");
+
+const CreateChannel = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.createChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
+
+const DeleteChannel = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.deleteChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });  
+}
+
+const GetChannelByName = async (client, name) => {
+  const data = await ListChannels(client, {});
+  const channel = data.Channels.find(ch => ch.Name === name);
+  return channel;
+}
+
+const StartChannel = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.startChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
+
+const StopChannel = (client, params) => {
+  return new Promise((resolve, reject) => {
+    client.stopChannel(params, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
 
 const VideoDescription = ({ name, maxBitrate, frameRate, height, width }) => {
   return {
@@ -74,26 +120,24 @@ const InputSettings = () => {
 };
 
 class Channel {
-  constructor(client, { channelId, input, mediaPackageChannelId, roleArn }) {
+  constructor(client, mediaPackageClient, { channelId }) {
     this.client = client;
+    this.mediaPackageClient = mediaPackageClient;
     this.channelId = channelId;
-    this.input = input;
-    this.mediaPackageChannelId = mediaPackageChannelId;
-    this.roleArn = roleArn;
   }
 
-  async create() {
+  async create({ input, mediaPackageChannelId, roleArn }) {
     const destinationId = nanoid(6);
 
     const channelParams = {
       Name: this.channelId,
-      RoleArn: this.roleArn,
+      RoleArn: roleArn,
       ChannelClass: "STANDARD",
       LogLevel: "INFO",
       Destinations: [ { 
         Id: destinationId,
         Settings: [],
-        MediaPackageSettings: [ { ChannelId: this.mediaPackageChannelId } ]
+        MediaPackageSettings: [ { ChannelId: mediaPackageChannelId } ]
       } ],
       EncoderSettings: {
         TimecodeConfig: {
@@ -140,8 +184,8 @@ class Channel {
         GlobalConfiguration: { }
       },
       InputAttachments: [ {
-        InputId: this.input.getInputId(),
-        InputAttachmentName: this.input.getInputName(),
+        InputId: input.getInputId(),
+        InputAttachmentName: input.getInputName(),
         InputSettings: InputSettings(),
       } ],
       InputSpecification: {
@@ -156,15 +200,57 @@ class Channel {
   }
 
   async exists() {
-    const data = await ListChannels(this.client, {});
-    const channel = data.Channels.find(ch => ch.Name === this.channelId);
-    if (!channel) {
-      return false;
-    } {
+    const channel = await this.details();
+    return (channel !== null);
+  }
+
+  async details() {
+    const channel = await GetChannelByName(this.client, this.channelId);
+    if (channel) {
+      const input = new Input(this.client, { channelId: this.channelId, inputId: channel.InputAttachments[0].InputId });
+      await input.details();
+      const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: channel.Destinations[0].MediaPackageSettings[0].ChannelId });
+      const mediaPackageChannelEndpoints = await mediaPackageChannel.endpoints();
+      const hlsPackages = mediaPackageChannelEndpoints.OriginEndpoints.filter(ep => ep.HlsPackage !== undefined);
       this.data = {
         Channel: channel
       };
-      return true;
+      return {
+        channel_id: channel.Name,
+        rtmp_urls: input.getRtmpUrls(),
+        hls_urls: hlsPackages.map(pkg => pkg.Url)
+      }
+    }
+    return null;
+  }
+
+  async delete() {
+    const channel = await GetChannelByName(this.client, this.channelId);
+    if (channel) {
+      debug(`${this.channelId}: Removing channel`);
+      const data = await DeleteChannel(this.client, { ChannelId: channel.Id });
+      const input = new Input(this.client, { channelId: this.channelId, inputId: data.InputAttachments[0].InputId });
+      await input.delete();
+    } else {
+      throw new ChannelNotFoundError(`Could not find channel "${this.channelId}"`);
+    }
+  }
+
+  async start() {
+    const channel = await GetChannelByName(this.client, this.channelId);
+    if (channel) {
+      await StartChannel(this.client, { ChannelId: channel.Id });
+    } else {
+      throw new ChannelNotFoundError(`Could not find channel "${this.channelId}"`);
+    }
+  }
+
+  async stop() {
+    const channel = await GetChannelByName(this.client, this.channelId);
+    if (channel) {
+      await StopChannel(this.client, { ChannelId: channel.Id });
+    } else {
+      throw new ChannelNotFoundError(`Could not find channel "${this.channelId}"`);
     }
   }
 }

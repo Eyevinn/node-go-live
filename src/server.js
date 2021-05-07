@@ -6,11 +6,8 @@ const AWS = require("aws-sdk");
 
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
-const MediaPackageChannel = require("./aws/media_package_channel.js");
 
-const { StartChannel, StopChannel, ListChannels, DeleteChannel, GetChannelByName, GetInputById } = require("./aws/wrapper.js");
-
-const { ChannelNotFoundError } = require("./errors.js");
+const { ListChannels } = require("./aws/wrapper.js");
 
 class GoLiveApiServer {
   constructor(opts) {
@@ -69,11 +66,10 @@ class GoLiveApiServer {
       await input.create({ whiteListRules: whiteListRules });
     }
 
-    const channel = new Channel(this.mediaLiveClient, 
-      { channelId: channelId, input: input, mediaPackageChannelId: mediaPackageChannelId, roleArn: this.role_arn });
+    const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
     if (!(await channel.exists())) {
       debug(`${channelId}: Creating channel`);
-      await channel.create();
+      await channel.create({ input: input, mediaPackageChannelId: mediaPackageChannelId, roleArn: this.role_arn });
     }
 
     const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: mediaPackageChannelId });
@@ -98,55 +94,29 @@ class GoLiveApiServer {
   }
 
   async getChannelDetails({ channelId }) {
-    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
-    if (channel) {
-      const input = await GetInputById(this.mediaLiveClient, channel.InputAttachments[0].InputId);
-      const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: channel.Destinations[0].MediaPackageSettings[0].ChannelId });
-      const mediaPackageChannelEndpoints = await mediaPackageChannel.endpoints();
-      const hlsPackages = mediaPackageChannelEndpoints.OriginEndpoints.filter(ep => ep.HlsPackage !== undefined);
-      return {
-        channel_id: channel.Name,
-        rtmp_urls: input.Destinations.map(d => d.Url),
-        hls_urls: hlsPackages.map(pkg => pkg.Url)
-      }
-    } else {
-      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
-    }
+    const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
+    const channelDetails = await channel.details();
+    return channelDetails;
   }
 
   async removeChannel({ channelId }) {
-    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
-    if (channel) {
-      debug(`${channelId}: Removing channel`);
-      const data = await DeleteChannel(this.mediaLiveClient, { ChannelId: channel.Id });
-      const input = new Input(this.mediaLiveClient, { channelId: channelId, inputId: data.InputAttachments[0].InputId });
-      await input.delete();
-    } else {
-      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
-    }
+    const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
+    await channel.delete();
   }
 
   async startChannel({ channelId }) {
-    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
-    if (channel) {
-      await StartChannel(this.mediaLiveClient, { ChannelId: channel.Id });
-      return {
-        status: "STARTED"
-      }        
-    } else {
-      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
-    }
+    const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
+    await channel.start();
+    return {
+      status: "STARTED"
+    }        
   }
 
   async stopChannel({ channelId }) {
-    const channel = await GetChannelByName(this.mediaLiveClient, channelId);
-    if (channel) {
-      await StopChannel(this.mediaLiveClient, { ChannelId: channel.Id });
-      return {
-        status: "STOPPED"
-      }
-    } else {
-      throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
+    const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
+    await channel.start();
+    return {
+      status: "STOPPED"
     }
   }
 }
