@@ -6,6 +6,7 @@ const AWS = require("aws-sdk");
 
 const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
+const MediaPackageChannel = require("./aws/media_package_channel.js");
 
 const { ListChannels } = require("./aws/wrapper.js");
 
@@ -114,7 +115,7 @@ class GoLiveApiServer {
 
   async stopChannel({ channelId }) {
     const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
-    await channel.start();
+    await channel.stop();
     return {
       status: "STOPPED"
     }
