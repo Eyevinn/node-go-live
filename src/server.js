@@ -62,7 +62,7 @@ class GoLiveApiServer {
     debug(`Listening on ${address}`);
   }
 
-  async createChannel({ channelId, mediaPackageChannel, whiteListRules }) {    
+  async createChannel({ channelId, mediaPackageChannelId, whiteListRules }) {    
     const input = new Input(this.mediaLiveClient, { channelId: channelId });
     if (!(await input.exists())) {
       debug(`${channelId}: Creating input`);
@@ -70,15 +70,20 @@ class GoLiveApiServer {
     }
 
     const channel = new Channel(this.mediaLiveClient, 
-      { channelId: channelId, input: input, mediaPackageChannel: mediaPackageChannel, roleArn: this.role_arn });
+      { channelId: channelId, input: input, mediaPackageChannelId: mediaPackageChannelId, roleArn: this.role_arn });
     if (!(await channel.exists())) {
       debug(`${channelId}: Creating channel`);
       await channel.create();
     }
 
+    const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: mediaPackageChannelId });
+    const mediaPackageChannelEndpoints = await mediaPackageChannel.endpoints();
+    const hlsPackages = mediaPackageChannelEndpoints.OriginEndpoints.filter(ep => ep.HlsPackage !== undefined);
+
     return {
       channel_id: channelId,
       rtmp_urls: input.getRtmpUrls(),
+      hls_urls: hlsPackages.map(pkg => pkg.Url)
     };
   }
 

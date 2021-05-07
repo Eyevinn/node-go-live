@@ -74,11 +74,11 @@ const InputSettings = () => {
 };
 
 class Channel {
-  constructor(client, { channelId, input, mediaPackageChannel, roleArn }) {
+  constructor(client, { channelId, input, mediaPackageChannelId, roleArn }) {
     this.client = client;
     this.channelId = channelId;
     this.input = input;
-    this.mediaPackageChannel = mediaPackageChannel;
+    this.mediaPackageChannelId = mediaPackageChannelId;
     this.roleArn = roleArn;
   }
 
@@ -93,7 +93,7 @@ class Channel {
       Destinations: [ { 
         Id: destinationId,
         Settings: [],
-        MediaPackageSettings: [ { ChannelId: this.mediaPackageChannel } ]
+        MediaPackageSettings: [ { ChannelId: this.mediaPackageChannelId } ]
       } ],
       EncoderSettings: {
         TimecodeConfig: {

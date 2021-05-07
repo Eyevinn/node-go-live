@@ -30,6 +30,11 @@ const schemas = {
             items: {
               type: "string", description: "RTMP URL"
             }
+          },
+          hls_urls: {
+            description: "An array of HLS URLs for playback",
+            type: "array",
+            items: { type: "string", description: "HLS URL" }
           }
         }
       }
@@ -112,7 +117,7 @@ module.exports = (fastify, opts, next) => {
         const channel = await controller.createChannel({
           channelId: request.body.channel_id,
           whiteListRules: request.body.whitelist,
-          mediaPackageChannel: request.body.media_package_channel,
+          mediaPackageChannelId: request.body.media_package_channel,
         });
         debug(channel);
         reply.send(channel);
