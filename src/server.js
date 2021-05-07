@@ -8,8 +8,7 @@ const Channel = require("./aws/channel.js");
 const Input = require("./aws/input.js");
 const MediaPackageChannel = require("./aws/media_package_channel.js");
 
-const { StartChannel, StopChannel, ListChannels, DeleteChannel, 
-  DeleteInput, GetChannelByName, GetInputById, WaitForInputToBeDetached } = require("./aws/wrapper.js");
+const { StartChannel, StopChannel, ListChannels, DeleteChannel, GetChannelByName, GetInputById } = require("./aws/wrapper.js");
 
 const { ChannelNotFoundError } = require("./errors.js");
 
@@ -64,10 +63,10 @@ class GoLiveApiServer {
   }
 
   async createChannel({ channelId, mediaPackageChannel, whiteListRules }) {    
-    const input = new Input(this.mediaLiveClient, { channelId: channelId, whiteListRules: whiteListRules });
+    const input = new Input(this.mediaLiveClient, { channelId: channelId });
     if (!(await input.exists())) {
       debug(`${channelId}: Creating input`);
-      await input.create();
+      await input.create({ whiteListRules: whiteListRules });
     }
 
     const channel = new Channel(this.mediaLiveClient, 
@@ -115,8 +114,8 @@ class GoLiveApiServer {
     if (channel) {
       debug(`${channelId}: Removing channel`);
       const data = await DeleteChannel(this.mediaLiveClient, { ChannelId: channel.Id });
-      await WaitForInputToBeDetached(this.mediaLiveClient, data.InputAttachments[0].InputId);
-      await DeleteInput(this.mediaLiveClient, { InputId: data.InputAttachments[0].InputId });
+      const input = new Input(this.mediaLiveClient, { channelId: channelId, inputId: data.InputAttachments[0].InputId });
+      await input.delete();
     } else {
       throw new ChannelNotFoundError(`Could not find channel "${channelId}"`);
     }

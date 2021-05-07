@@ -1,56 +1,4 @@
-const ListInputSecurityGroups = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.listInputSecurityGroups(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
 
-const CreateInputSecurityGroup = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.createInputSecurityGroup(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
-
-const CreateInput = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.createInput(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
-
-const ListInputs = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.listInputs(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
-
-const DeleteInput = (client, params) => {
-  return new Promise((resolve, reject) => {
-    client.deleteInput(params, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
-
-const WaitForInputToBeDetached = (client, id) => {
-  return new Promise((resolve, reject) => {
-    client.waitFor("inputDetached", { InputId: id }, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
-}
 
 const CreateChannel = (client, params) => {
   return new Promise((resolve, reject) => {
@@ -111,13 +59,7 @@ const GetInputById = async (client, id) => {
 }
 
 module.exports = {
-  ListInputSecurityGroups,
-  CreateInputSecurityGroup,
-  CreateInput,
-  ListInputs,
-  DeleteInput,
   GetInputById,
-  WaitForInputToBeDetached,
   CreateChannel,
   StartChannel,
   StopChannel,
