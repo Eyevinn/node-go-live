@@ -10,12 +10,10 @@ const schemas = {
       properties: {
         channel_id: { type: "string", description: "Channel Id" },
         whitelist: { type: "string", description: "Whitelist rules, CIDR-formatted string" },
-        media_package_channel: { type: "string", description: "Media Package channel ID" }
       },
       example: {
         channel_id: "example1",
         whitelist: "0.0.0.0/0",
-        media_package_channel: "eyevinn",
       }
     },
     response: {
@@ -117,7 +115,6 @@ module.exports = (fastify, opts, next) => {
         const channel = await controller.createChannel({
           channelId: request.body.channel_id,
           whiteListRules: request.body.whitelist,
-          mediaPackageChannelId: request.body.media_package_channel,
         });
         debug(channel);
         reply.send(channel);

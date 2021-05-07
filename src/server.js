@@ -60,20 +60,25 @@ class GoLiveApiServer {
     debug(`Listening on ${address}`);
   }
 
-  async createChannel({ channelId, mediaPackageChannelId, whiteListRules }) {    
+  async createChannel({ channelId, whiteListRules }) {    
     const input = new Input(this.mediaLiveClient, { channelId: channelId });
     if (!(await input.exists())) {
       debug(`${channelId}: Creating input`);
       await input.create({ whiteListRules: whiteListRules });
     }
 
+    const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: channelId });
+    if (!(await mediaPackageChannel.exists())) {
+      debug(`${channelId}: Creating media package channel`);
+      await mediaPackageChannel.create();
+    }
+
     const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
     if (!(await channel.exists())) {
       debug(`${channelId}: Creating channel`);
-      await channel.create({ input: input, mediaPackageChannelId: mediaPackageChannelId, roleArn: this.role_arn });
+      await channel.create({ input: input, mediaPackageChannelId: channelId, roleArn: this.role_arn });
     }
 
-    const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: mediaPackageChannelId });
     const mediaPackageChannelEndpoints = await mediaPackageChannel.endpoints();
     const hlsPackages = mediaPackageChannelEndpoints.OriginEndpoints.filter(ep => ep.HlsPackage !== undefined);
 
@@ -103,6 +108,8 @@ class GoLiveApiServer {
   async removeChannel({ channelId }) {
     const channel = new Channel(this.mediaLiveClient, this.mediaPackageClient, { channelId: channelId });
     await channel.delete();
+    const mediaPackageChannel = new MediaPackageChannel(this.mediaPackageClient, { channelId: channelId });
+    await mediaPackageChannel.delete();
   }
 
   async startChannel({ channelId }) {

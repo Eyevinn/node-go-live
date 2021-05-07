@@ -6,6 +6,8 @@ The `@eyevinn/go-live` NPM library provides the functionality to build an API la
 RTMP -> MediaLive -> MediaPackage -> HLS
 ```
 
+When creating a channel an AWS MediaLive channel is created with one RTMP input, one MediaPackage output group and an AWS MediaPackage channel with an HLS origin endpoint. The API returns the RTMP urls to stream to and the HLS origin endpoint to playback from (or have a CDN read from).
+
 ## Example on how to use it
 
 Install dependency
@@ -66,8 +68,7 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
   "channel_id": "example1",
-  "whitelist": "0.0.0.0/0",
-  "media_package_channel": "eyevinn"
+  "whitelist": "0.0.0.0/0"
 }'
 
 {
