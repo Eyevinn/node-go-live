@@ -45,10 +45,10 @@ node server.js
 
 ## API
 
-API docs (Swagger) is then available at `/api/docs`:
+API docs (Swagger) is then available at `/api/docs/`.
 
-| Method | Url                            | Description |
-| ------ | ------------------------------ | ----------- |
+| Method | Url | Description |
+| ------ | --- | ----------- |
 | POST   | `/api/v1/channels`             | Create and setup a channel |
 | GET    | `/api/v1/channels`             | List channels |
 | GET    | `/api/v1/channels/{channelId}` | Describe a channel |
